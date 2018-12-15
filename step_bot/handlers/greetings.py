@@ -19,7 +19,7 @@ class GroupHandler(BaseHandler):
         self.dispatcher.add_handler(MessageHandler(Filters.status_update.migrate, self.chat_migrate))
         self.dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, self.new_member))
 
-    def __create_chat(self, chat_id):
+    def __create_chat(self, bot, chat_id):
         db_session = self.get_db()
 
         try:
@@ -29,6 +29,15 @@ class GroupHandler(BaseHandler):
 
             db_session.add(new_chat)
         finally:
+            bot.send_message(
+                chat_id=chat_id, text=textwrap.dedent("""\
+                Всем привет!
+
+                Меня зовут *Шагомер*, я запомнил ваш чат!
+                Нужно установить цель для этой дружной команды!
+                """), parse_mode=telegram.ParseMode.MARKDOWN
+            )
+
             db_session.commit()
 
     def __migrate_chat(self, chat_id, new_chat_id):
@@ -46,16 +55,7 @@ class GroupHandler(BaseHandler):
     def chat_created(self, bot, update):
         logging.debug('New chat created %s' % update.message.chat_id)
 
-        self.__create_chat(update.message.chat_id)
-
-        bot.send_message(
-            chat_id=update.message.chat_id, text=textwrap.dedent("""\
-            Всем привет!
-            
-            Меня зовут *Шагомер*, я запомнил ваш чат!
-            Нужно установить цель для этой дружной команды!
-            """), parse_mode=telegram.ParseMode.MARKDOWN
-        )
+        self.__create_chat(bot, update.message.chat_id)
 
     def chat_migrate(self, bot, update):
         self.__migrate_chat(update.message.chat_id, update.message.migrate_to_chat_id)
@@ -67,7 +67,7 @@ class GroupHandler(BaseHandler):
         i_am = list(filter(lambda m: m.is_bot and m.username == bot.username, update.message.new_chat_members))
 
         if len(i_am):
-            self.__create_chat(update.message.chat_id)
+            self.__create_chat(bot, update.message.chat_id)
 
         if len(members) > 1:
             bot.send_message(

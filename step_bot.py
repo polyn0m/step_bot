@@ -20,11 +20,9 @@ def setup_logger():
     logger = logging.getLogger()
 
     log_level = getattr(logging, settings.LOG_LEVEL.upper())
-    access_log_level = getattr(logging, settings.LOG_LEVEL_ACCESS.upper())
     request_access_log = getattr(logging, settings.LOG_LEVEL_REQUEST.upper())
 
     logger.setLevel(log_level)
-    logging.getLogger('tornado.access').level = access_log_level
     logging.getLogger("requests.packages.urllib3").level = request_access_log
 
     if settings.LOG_TO:

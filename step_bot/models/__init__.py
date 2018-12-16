@@ -30,6 +30,7 @@ class Target(Base):
     date_edit = Column(DateTime(timezone=True), onupdate=func.now())
 
     chat = relationship("Chat", back_populates="current_target")
+    steps = relationship("Step", back_populates="target")
 
 
 class Step(Base):
@@ -37,8 +38,10 @@ class Step(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     user_id = Column(String)
-    target = Column(UUID(as_uuid=True), ForeignKey('targets.id'))
+    target_id = Column(UUID(as_uuid=True), ForeignKey('targets.id'))
     date = Column(Date)
     steps = Column(Integer)
     date_creation = Column(DateTime(timezone=True), server_default=func.now())
     date_edit = Column(DateTime(timezone=True), onupdate=func.now())
+
+    target = relationship("Target", back_populates="steps")

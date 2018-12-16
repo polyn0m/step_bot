@@ -33,9 +33,9 @@ class CommandBaseHandler(BaseHandler):
     def send_clean_error(self, bot, chat_id, e):
         bot.send_message(
             chat_id=chat_id, text=textwrap.dedent("""\
-            %s
+            {0}
 
-            Использование: /%s %s
+            Использование: /{1} {2}
             """.format(self.clean_error_message, self.command, self.usage_params)))
 
     def handle(self, bot, update, args):

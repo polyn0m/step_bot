@@ -33,9 +33,9 @@ class GroupHandler(BaseHandler):
                 chat_id=chat_id, text=textwrap.dedent("""\
                 Всем привет!
 
-                Меня зовут *Шагомер*, я запомнил ваш чат!
+                Меня зовут *%s*, я запомнил ваш чат!
                 Нужно установить цель для этой дружной команды!
-                """), parse_mode=telegram.ParseMode.MARKDOWN
+                """ % bot.first_name), parse_mode=telegram.ParseMode.MARKDOWN
             )
 
             db_session.commit()
@@ -71,15 +71,11 @@ class GroupHandler(BaseHandler):
 
         if len(members) > 1:
             bot.send_message(
-                chat_id=update.message.chat_id, text="""
-                Всем привет!
-                """
+                chat_id=update.message.chat_id, text="""Всем привет!"""
             )
         elif len(members) > 0:
             bot.send_message(
-                chat_id=update.message.chat_id, text="""
-                %s, привет!
-                """ % members[0].first_name
+                chat_id=update.message.chat_id, text="""%s, привет!""" % members[0].first_name
             )
 
 

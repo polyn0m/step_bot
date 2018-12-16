@@ -4,6 +4,7 @@ from telegram.ext import Updater
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from step_bot.handlers.commands import NewTargetHandler, RenameTargetHandler
 from step_bot.handlers.greetings import GroupHandler, P2PEchoHandler
 from step_bot.models import Base
 
@@ -48,6 +49,9 @@ class Bot:
         self.handlers.add(P2PEchoHandler(**options))
 
         self.handlers.add(GroupHandler(**options))
+
+        self.handlers.add(NewTargetHandler(**options))
+        self.handlers.add(RenameTargetHandler(**options))
 
     def start(self):
         logging.info('Starting pooling...')

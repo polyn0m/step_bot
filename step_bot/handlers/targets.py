@@ -113,7 +113,7 @@ class UpdateTargetHandler(CommandBaseHandler, CheckTargetMixin):
 
             bot.send_message(
                 chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                Наша изменилась! Теперь нам необходимо пройти: *%s км*
+                Наша цель изменилась! Теперь нам необходимо пройти: *%s км*
                 """ % new_value), parse_mode=telegram.ParseMode.MARKDOWN)
         except NoResultFound as e:
             self.send_error(bot, update.message.chat_id)

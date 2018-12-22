@@ -4,16 +4,19 @@ from telegram.ext import Updater
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from step_bot.handlers.steps import TodayHandler, DayHandler
-from step_bot.handlers.targets import NewTargetHandler, RenameTargetHandler, UpdateTargetHandler
-from step_bot.handlers.greetings import GroupHandler, P2PEchoHandler
+from step_bot.handlers import init_handlers
+from step_bot.jobs import init_scheduler
 from step_bot.models import Base
 
 
 class Bot:
     settings = None
 
+    updater = None
     handlers = set()
+
+    scheduler = None
+    jobs = set()
 
     db_engine = None
     get_db = None
@@ -23,10 +26,20 @@ class Bot:
 
         self.settings = settings
 
+        self.init_database()
+
+        self.init_updater()
+        self.init_scheduler()
+
+    def init_updater(self):
         self.updater = Updater(self.settings.BOT_TOKEN, request_kwargs=self.settings.BOT_REQUEST_KWARGS)
 
-        self.init_database()
-        self.init_handlers()
+        options = dict(
+            dispatcher=self.updater.dispatcher,
+            db=self.get_db
+        )
+
+        self.handlers = init_handlers(**options)
 
     def init_database(self):
         self.db_engine = create_engine(
@@ -34,36 +47,30 @@ class Bot:
                 login=self.settings.POSTGRES_USER, password=self.settings.POSTGRES_PASS,
                 host=self.settings.POSTGRES_HOST, port=self.settings.POSTGRES_PORT,
                 database=self.settings.POSTGRES_DB
-            ), echo=True
+            )
         )
 
         self.get_db = sessionmaker(bind=self.db_engine)
 
         Base.metadata.create_all(self.db_engine)
 
-    def init_handlers(self):
+
+    def init_scheduler(self):
         options = dict(
-            dispatcher=self.updater.dispatcher,
+            settings=self.settings,
+            bot=self.updater.bot,
             db=self.get_db
         )
 
-        self.handlers.add(P2PEchoHandler(**options))
-
-        self.handlers.add(GroupHandler(**options))
-
-        self.handlers.add(NewTargetHandler(**options))
-        self.handlers.add(RenameTargetHandler(**options))
-        self.handlers.add(UpdateTargetHandler(**options))
-
-        self.handlers.add(TodayHandler(**options))
-        self.handlers.add(DayHandler(**options))
+        self.scheduler, self.jobs = init_scheduler(**options)
 
     def start(self):
-        logging.info('Starting pooling...')
+        logging.info('Starting bot...')
 
         self.updater.start_polling()
+        self.scheduler.start()
 
     def stop(self):
-        logging.info('Stopping pooling...')
+        logging.info('Stopping bot...')
 
         self.updater.stop()

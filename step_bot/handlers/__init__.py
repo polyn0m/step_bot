@@ -4,6 +4,29 @@ import textwrap
 from telegram.ext import CommandHandler
 
 
+def init_handlers(dispatcher, db):
+    from step_bot.handlers.steps import TodayHandler, DayHandler
+    from step_bot.handlers.targets import NewTargetHandler, RenameTargetHandler, UpdateTargetHandler
+    from step_bot.handlers.greetings import GroupHandler, P2PEchoHandler
+
+    handlers = set()
+
+    options = dict(dispatcher=dispatcher, db=db)
+
+    handlers.add(P2PEchoHandler(**options))
+
+    handlers.add(GroupHandler(**options))
+
+    handlers.add(NewTargetHandler(**options))
+    handlers.add(RenameTargetHandler(**options))
+    handlers.add(UpdateTargetHandler(**options))
+
+    handlers.add(TodayHandler(**options))
+    handlers.add(DayHandler(**options))
+
+    return handlers
+
+
 class BaseHandler:
     dispatcher = None
     db = None

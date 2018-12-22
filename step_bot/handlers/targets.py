@@ -18,8 +18,11 @@ class NewTargetHandler(CommandBaseHandler):
     def clean(self, args):
         if len(args) != 2:
             raise ValueError("Number of arguments incorrect")
+        end_date = datetime.strptime(args[1], "%d.%m.%Y")
+        if end_date < datetime.now():
+            raise ValueError("End date must greater than now!")
 
-        return dict(value=int(args[0]), end=datetime.strptime(args[1], "%d.%m.%Y"))
+        return dict(value=int(args[0]), end=end_date)
 
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()

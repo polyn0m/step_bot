@@ -4,13 +4,24 @@ import uuid
 from datetime import datetime
 
 import telegram
+from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
 
 from step_bot.handlers import CommandBaseHandler, CheckTargetMixin
 from step_bot.models import Chat, Step
 
 
-class TodayHandler(CommandBaseHandler, CheckTargetMixin):
+class StepCalculateMixin:
+    def recalculate_steps(self, db_session, chat):
+        sum = db_session.query(func.sum(Step.steps).label('total_steps'))\
+            .filter(Step.target == chat.current_target)\
+            .group_by(Step.target_id)\
+            .one()
+
+        chat.current_target.current_value = sum.total_steps
+
+
+class TodayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
     command = "today"
     clean_error_message = "Указано не верное количество шагов!"
     usage_params = "<Число шагов>"
@@ -18,8 +29,11 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin):
     def clean(self, args):
         if len(args) != 1:
             raise ValueError("Number of arguments incorrect")
+        value = int(args[0])
+        if value < 0:
+            raise ValueError("Steps must greater than 0")
 
-        return dict(value=int(args[0]))
+        return dict(value=value)
 
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()
@@ -67,6 +81,8 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin):
                     """ % (update.message.from_user.first_name, today.strftime("%d.%m.%Y"), steps)),
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
+
+            self.recalculate_steps(db_session, current_chat)
         except NoResultFound as e:
             self.send_error(bot, update.message.chat_id)
             logging.exception(e)
@@ -74,7 +90,7 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin):
             db_session.commit()
 
 
-class DayHandler(CommandBaseHandler, CheckTargetMixin):
+class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
     command = "day"
     clean_error_message = "Неправильно указаны параметры!"
     usage_params = "<Дата ДД.ММ.ГГГГ> <Число шагов>"
@@ -82,8 +98,11 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin):
     def clean(self, args):
         if len(args) != 2:
             raise ValueError("Number of arguments incorrect")
+        value = int(args[1])
+        if value < 0:
+            raise ValueError("Steps must greater than 0")
 
-        return dict(date=datetime.strptime(args[0], "%d.%m.%Y"), value=int(args[1]))
+        return dict(date=datetime.strptime(args[0], "%d.%m.%Y"), value=value)
 
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()
@@ -132,6 +151,8 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin):
                             """ % (update.message.from_user.first_name, day.strftime("%d.%m.%Y"), steps)),
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
+
+            self.recalculate_steps(db_session, current_chat)
         except NoResultFound as e:
             self.send_error(bot, update.message.chat_id)
             logging.exception(e)

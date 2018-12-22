@@ -1,6 +1,9 @@
+import pytz
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
-from pytz import utc
+
+
+jobs = dict()
 
 
 def init_scheduler(settings, bot, db):
@@ -19,20 +22,46 @@ def init_scheduler(settings, bot, db):
     executors = dict(default=dict(type="threadpool", max_workers=5))
 
     scheduler.configure(
-        jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc
+        jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=pytz.timezone("Europe/Moscow")
     )
 
     return scheduler, init_jobs(scheduler, bot, db)
 
 
 def init_jobs(scheduler, bot, db):
-    return set()
+    from step_bot.jobs.notify import EveningReminder
+
+    options = dict(scheduler=scheduler, bot=bot, db=db)
+
+    evening_reminder = EveningReminder(**options)
+
+    jobs[evening_reminder.name] = evening_reminder
+
+    return jobs
+
+
+def execute_job(job_name):
+    job = jobs[job_name]
+
+    job.execute()
 
 
 class BotJob:
-    bot = None
-    db = None
+    name = ""
+    at = dict()
 
-    def __init__(self, bot, db):
+    job = None
+
+    bot = None
+    get_db = None
+
+    def __init__(self, scheduler, bot, db):
         self.bot = bot
-        self.db = db
+        self.get_db = db
+
+        self.job = scheduler.add_job(
+            execute_job, 'cron', **self.at, id=self.name, kwargs=dict(job_name=self.name), replace_existing=True
+        )
+
+    def execute(self):
+        NotImplemented("It is abstract job!")

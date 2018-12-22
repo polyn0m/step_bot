@@ -13,6 +13,7 @@ class Chat(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     chat_id = Column(String, unique=True)
+    current_target_id = Column(UUID(as_uuid=True), nullable=True)
     date = Column(DateTime(timezone=True), server_default=func.now())
 
     current_target = relationship("Target", uselist=False, back_populates="chat")

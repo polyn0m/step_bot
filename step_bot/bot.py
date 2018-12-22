@@ -54,7 +54,6 @@ class Bot:
 
         Base.metadata.create_all(self.db_engine)
 
-
     def init_scheduler(self):
         options = dict(
             settings=self.settings,
@@ -73,4 +72,5 @@ class Bot:
     def stop(self):
         logging.info('Stopping bot...')
 
+        self.scheduler.shutdown()
         self.updater.stop()

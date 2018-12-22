@@ -29,7 +29,7 @@ def init_handlers(dispatcher, db):
 
 class BaseHandler:
     dispatcher = None
-    db = None
+    get_db = None
 
     def __init__(self, dispatcher, db):
         self.dispatcher = dispatcher

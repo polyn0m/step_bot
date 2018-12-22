@@ -29,6 +29,8 @@ class NewTargetHandler(CommandBaseHandler):
 
             current_chat = db_session.query(Chat).filter(Chat.chat_id == str(chat_id)).one()
             new_target = Target(id=uuid.uuid4(), chat=current_chat, name="Новая цель", target_value=value)
+
+            current_chat.current_target_id = new_target.id
             current_chat.current_target = new_target
 
             db_session.add(new_target)

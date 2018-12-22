@@ -6,8 +6,9 @@ from telegram.ext import CommandHandler
 
 def init_handlers(dispatcher, db):
     from step_bot.handlers.steps import TodayHandler, DayHandler
-    from step_bot.handlers.targets import NewTargetHandler, RenameTargetHandler, UpdateTargetHandler
+    from step_bot.handlers.targets import NewTargetHandler, UpdateTargetHandler
     from step_bot.handlers.greetings import GroupHandler, P2PEchoHandler
+    from step_bot.handlers.stats import StatHandler
 
     handlers = set()
 
@@ -18,11 +19,12 @@ def init_handlers(dispatcher, db):
     handlers.add(GroupHandler(**options))
 
     handlers.add(NewTargetHandler(**options))
-    handlers.add(RenameTargetHandler(**options))
     handlers.add(UpdateTargetHandler(**options))
 
     handlers.add(TodayHandler(**options))
     handlers.add(DayHandler(**options))
+
+    handlers.add(StatHandler(**options))
 
     return handlers
 

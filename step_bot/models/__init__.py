@@ -27,6 +27,7 @@ class Target(Base):
     name = Column(String)
     target_value = Column(Integer)
     current_value = Column(Integer, default=0)
+    target_date = Column(DateTime(timezone=True))
     date_creation = Column(DateTime(timezone=True), server_default=func.now())
     date_edit = Column(DateTime(timezone=True), onupdate=func.now())
 

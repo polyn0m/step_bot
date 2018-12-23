@@ -101,7 +101,7 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
         value = int(args[1])
         if value < 0:
             raise ValueError("Steps must greater than 0")
-        date = datetime.strptime(args[0], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ)
+        date = datetime.strptime(args[0], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ).date()
 
         return dict(date=date, value=value)
 
@@ -124,7 +124,7 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
             if not self.have_target(bot, current_chat):
                 return
 
-            if day < current_chat.current_target.date_creation:
+            if day < current_chat.current_target.date_creation.date():
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
                     {0}, дата для шагов не может быть раньше чем дата начала (*{1}*) у цели.

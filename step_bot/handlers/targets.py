@@ -18,8 +18,8 @@ class NewTargetHandler(CommandBaseHandler):
     def clean(self, args):
         if len(args) != 2:
             raise ValueError("Number of arguments incorrect")
-        end_date = datetime.strptime(args[1], "%d.%m.%Y")
-        if end_date < datetime.now():
+        end_date = datetime.strptime(args[1], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ).date()
+        if end_date < datetime.now(tz=self.settings.BOT_TZ).date():
             raise ValueError("End date must greater than now!")
 
         return dict(value=int(args[0]), end=end_date)
@@ -76,7 +76,7 @@ class UpdateTargetHandler(CommandBaseHandler, CheckTargetMixin):
         if action == "value" or action == "initial":
             value = int(args[1])
         elif action == "date":
-            value = datetime.strptime(args[1], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ)
+            value = datetime.strptime(args[1], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ).date()
         elif action == "name":
             value = " ".join(args[1:])
         else:

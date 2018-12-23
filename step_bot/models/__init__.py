@@ -18,6 +18,12 @@ class Chat(Base):
 
     current_target = relationship("Target", uselist=False, back_populates="chat")
 
+    def is_target_complete(self):
+        if self.current_target:
+            return self.current_target.is_target_complete()
+
+        return False
+
 
 class Target(Base):
     __tablename__ = 'targets'
@@ -34,6 +40,9 @@ class Target(Base):
 
     chat = relationship("Chat", back_populates="current_target")
     steps = relationship("Step", back_populates="target")
+
+    def is_target_complete(self):
+        return self.current_value >= self.target_value
 
 
 class Step(Base):

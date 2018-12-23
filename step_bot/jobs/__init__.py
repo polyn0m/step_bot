@@ -1,7 +1,6 @@
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
-
 jobs = dict()
 
 
@@ -28,13 +27,15 @@ def init_scheduler(settings, bot, db):
 
 
 def init_jobs(scheduler, bot, db, settings):
-    from step_bot.jobs.notify import EveningReminder
+    from step_bot.jobs.notify import EveningReminder, EveningStat
 
     options = dict(scheduler=scheduler, bot=bot, db=db, settings=settings)
 
     evening_reminder = EveningReminder(**options)
+    evening_stat = EveningStat(**options)
 
     jobs[evening_reminder.name] = evening_reminder
+    jobs[evening_stat.name] = evening_stat
 
     return jobs
 

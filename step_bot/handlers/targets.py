@@ -76,7 +76,7 @@ class UpdateTargetHandler(CommandBaseHandler, CheckTargetMixin):
         if action == "value" or action == "initial":
             value = int(args[1])
         elif action == "date":
-            value = datetime.strptime(args[1], "%d.%m.%Y")
+            value = datetime.strptime(args[1], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ)
         elif action == "name":
             value = " ".join(args[1:])
         else:

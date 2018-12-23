@@ -93,7 +93,7 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
 class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
     command = "day"
     clean_error_message = "Неправильно указаны параметры!"
-    usage_params = "<Дата ДД.ММ.ГГГГ> <Число шагов>"
+    usage_params = "<Дата dd.mm.yyyy> <Число шагов>"
 
     def clean(self, args):
         if len(args) != 2:
@@ -101,8 +101,9 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
         value = int(args[1])
         if value < 0:
             raise ValueError("Steps must greater than 0")
+        date = datetime.strptime(args[0], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ)
 
-        return dict(date=datetime.strptime(args[0], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ), value=value)
+        return dict(date=date, value=value)
 
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()

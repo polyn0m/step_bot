@@ -1,5 +1,7 @@
 import os
 
+import pytz
+
 
 def environ_var(key, default=None):
     val = os.environ.get(key, default)
@@ -17,6 +19,8 @@ DEBUG = environ_var("DEBUG", True)
 BOT_TOKEN = environ_var("BOT_TOKEN", '')
 BOT_PROXY_ENABLE = environ_var("DEBUG", False)
 BOT_REQUEST_KWARGS = dict()
+
+BOT_TZ = pytz.timezone(environ_var("BOT_TZ", "Europe/Volgograd"))
 
 if BOT_PROXY_ENABLE:
     BOT_REQUEST_KWARGS.update(dict(

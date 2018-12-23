@@ -35,6 +35,7 @@ class Bot:
         self.updater = Updater(self.settings.BOT_TOKEN, request_kwargs=self.settings.BOT_REQUEST_KWARGS)
 
         options = dict(
+            settings=self.settings,
             dispatcher=self.updater.dispatcher,
             db=self.get_db
         )

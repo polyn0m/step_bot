@@ -6,7 +6,7 @@ from datetime import datetime
 import telegram
 from sqlalchemy.orm.exc import NoResultFound
 
-from step_bot.handlers import CommandBaseHandler, CheckTargetMixin
+from step_bot.handlers import CommandBaseHandler, CheckTargetMixin, restricted
 from step_bot.models import Chat, Target
 
 
@@ -24,6 +24,7 @@ class NewTargetHandler(CommandBaseHandler):
 
         return dict(value=int(args[0]), end=end_date)
 
+    @restricted
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()
 
@@ -62,17 +63,17 @@ class NewTargetHandler(CommandBaseHandler):
 class UpdateTargetHandler(CommandBaseHandler, CheckTargetMixin):
     command = "update_target"
     clean_error_message = "Неправильно указаны параметры!"
-    usage_params = "<Действие=name,date,value> <Значение=строка,дата,число>"
+    usage_params = "<Действие=name,date,initial,value> <Значение=строка,дата,число,число>"
 
     def clean(self, args):
         if len(args) < 2:
             raise ValueError("Number of arguments incorrect")
 
         action = args[0]
-        if action not in ["value", "date", "name"]:
+        if action not in ["value", "initial", "date", "name"]:
             raise ValueError("Not allowed action")
 
-        if action == "value":
+        if action == "value" or action == "initial":
             value = int(args[1])
         elif action == "date":
             value = datetime.strptime(args[1], "%d.%m.%Y")
@@ -83,6 +84,7 @@ class UpdateTargetHandler(CommandBaseHandler, CheckTargetMixin):
 
         return dict(action=action, value=value)
 
+    @restricted
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()
 
@@ -103,22 +105,29 @@ class UpdateTargetHandler(CommandBaseHandler, CheckTargetMixin):
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                    Наша цель изменилась! Теперь нам необходимо пройти *%s км*
-                    """ % new_value), parse_mode=telegram.ParseMode.MARKDOWN)
+                    Наша цель изменилась! Теперь нам необходимо пройти *{0} км*
+                    """.format(new_value)), parse_mode=telegram.ParseMode.MARKDOWN)
+            elif action == "initial":
+                current_chat.current_target.initial_value = new_value
+
+                bot.send_message(
+                    chat_id=update.message.chat_id, text=textwrap.dedent("""\
+                    Наша цель изменилась! Начальное значение шагов стало равняться *{0}*
+                    """.format(new_value)), parse_mode=telegram.ParseMode.MARKDOWN)
             elif action == "date":
                 current_chat.current_target.target_date = new_value
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                    Теперь наша цель заканчивается *%s*
-                    """ % new_value.strftime("%d.%m.%Y")), parse_mode=telegram.ParseMode.MARKDOWN)
+                    Теперь наша цель заканчивается *{0}*
+                    """.format(new_value.strftime("%d.%m.%Y"))), parse_mode=telegram.ParseMode.MARKDOWN)
             elif action == "name":
                 current_chat.current_target.name = new_value
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                    Теперь наша цель называется *%s*
-                    """ % new_value), parse_mode=telegram.ParseMode.MARKDOWN)
+                    Теперь наша цель называется *{0}*
+                    """.format(new_value)), parse_mode=telegram.ParseMode.MARKDOWN)
         except NoResultFound as e:
             self.send_error(bot, update.message.chat_id)
             logging.exception(e)

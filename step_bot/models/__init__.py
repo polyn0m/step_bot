@@ -25,6 +25,7 @@ class Target(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     chat_id = Column(UUID(as_uuid=True), ForeignKey('chats.id'))
     name = Column(String)
+    initial_value = Column(Integer, default=0)
     target_value = Column(Integer)
     current_value = Column(Integer, default=0)
     target_date = Column(DateTime(timezone=True))

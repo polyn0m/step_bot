@@ -1,4 +1,3 @@
-import pytz
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -22,16 +21,16 @@ def init_scheduler(settings, bot, db):
     executors = dict(default=dict(type="threadpool", max_workers=5))
 
     scheduler.configure(
-        jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=pytz.timezone("Europe/Moscow")
+        jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=settings.BOT_TZ
     )
 
-    return scheduler, init_jobs(scheduler, bot, db)
+    return scheduler, init_jobs(scheduler, bot, db, settings)
 
 
-def init_jobs(scheduler, bot, db):
+def init_jobs(scheduler, bot, db, settings):
     from step_bot.jobs.notify import EveningReminder
 
-    options = dict(scheduler=scheduler, bot=bot, db=db)
+    options = dict(scheduler=scheduler, bot=bot, db=db, settings=settings)
 
     evening_reminder = EveningReminder(**options)
 
@@ -47,6 +46,8 @@ def execute_job(job_name):
 
 
 class BotJob:
+    settings = None
+
     name = ""
     at = dict()
 
@@ -55,7 +56,9 @@ class BotJob:
     bot = None
     get_db = None
 
-    def __init__(self, scheduler, bot, db):
+    def __init__(self, scheduler, bot, db, settings):
+        self.settings = settings
+
         self.bot = bot
         self.get_db = db
 

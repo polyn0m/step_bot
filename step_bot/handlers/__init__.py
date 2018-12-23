@@ -4,7 +4,7 @@ import textwrap
 from telegram.ext import CommandHandler
 
 
-def init_handlers(dispatcher, db):
+def init_handlers(dispatcher, db, settings):
     from step_bot.handlers.steps import TodayHandler, DayHandler
     from step_bot.handlers.targets import NewTargetHandler, UpdateTargetHandler
     from step_bot.handlers.greetings import GroupHandler, P2PEchoHandler
@@ -12,7 +12,7 @@ def init_handlers(dispatcher, db):
 
     handlers = set()
 
-    options = dict(dispatcher=dispatcher, db=db)
+    options = dict(dispatcher=dispatcher, db=db, settings=settings)
 
     handlers.add(P2PEchoHandler(**options))
 
@@ -29,13 +29,39 @@ def init_handlers(dispatcher, db):
     return handlers
 
 
+def restricted(handler):
+
+    def wrapped(self, bot, update, cleaned_args, *args, **kwargs):
+        if not isinstance(self, CommandBaseHandler):
+            logging.error("restricted decorator can use only with commands!")
+            return
+
+        from_user_id = update.message.from_user.id
+        admins = update.effective_chat.get_administrators()
+
+        is_admin = any(admin for admin in admins if admin.user.id == from_user_id)
+
+        if is_admin or update.effective_chat.all_members_are_administrators is not None:
+            return handler(self, bot, update, cleaned_args, *args, **kwargs)
+        else:
+            bot.send_message(
+                chat_id=update.message.chat_id, text="Управлять мной может только администратор группы!"
+            )
+
+    return wrapped
+
+
 class BaseHandler:
     dispatcher = None
     get_db = None
 
-    def __init__(self, dispatcher, db):
+    settings = None
+
+    def __init__(self, dispatcher, db, settings):
         self.dispatcher = dispatcher
         self.get_db = db
+
+        self.settings = settings
 
     def send_error(self, bot, chat_id):
         bot.send_message(chat_id=chat_id, text="Ой! Что-то пошло не так, соощите разработчикам!")

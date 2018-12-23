@@ -18,7 +18,7 @@ class StepCalculateMixin:
             .group_by(Step.target_id)\
             .one()
 
-        chat.current_target.current_value = sum.total_steps
+        chat.current_target.current_value = chat.current_target.initial_value + sum.total_steps
 
 
 class TodayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
@@ -42,7 +42,7 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
             chat_id = update.message.chat_id
             user_id = update.message.from_user.id
             steps = cleaned_args.get("value")
-            today = datetime.today().date()
+            today = datetime.now(tz=self.settings.BOT_TZ).date()
 
             current_chat = db_session.query(Chat).outerjoin(Chat.current_target) \
                 .filter(Chat.chat_id == str(chat_id)) \
@@ -62,8 +62,8 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                    %s, твои шаги за сегодня обновлены! Сегодня (%s) ты прошел(а) *%s* шагов, вместо _%s_ шагов!
-                    """ % (update.message.from_user.first_name, today.strftime("%d.%m.%Y"), steps, prev_value)),
+                    {0}, твои шаги за сегодня обновлены! Сегодня ({1}) ты прошел(а) *{2}* шагов, вместо _{3}_ шагов!
+                    """.format(update.message.from_user.first_name, today.strftime("%d.%m.%Y"), steps, prev_value)),
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
             except NoResultFound:
@@ -77,8 +77,8 @@ class TodayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                    %s! Сегодня (%s) ты прошел(а) *%s* шагов! Молодец!
-                    """ % (update.message.from_user.first_name, today.strftime("%d.%m.%Y"), steps)),
+                    {0}! {1} ты прошел(а) *{2}* шагов! Молодец!
+                    """.format(update.message.from_user.first_name, today.strftime("%d.%m.%Y"), steps)),
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
 
@@ -102,7 +102,7 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
         if value < 0:
             raise ValueError("Steps must greater than 0")
 
-        return dict(date=datetime.strptime(args[0], "%d.%m.%Y"), value=value)
+        return dict(date=datetime.strptime(args[0], "%d.%m.%Y").replace(tzinfo=self.settings.BOT_TZ), value=value)
 
     def execute(self, bot, update, cleaned_args):
         db_session = self.get_db()
@@ -114,11 +114,32 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
             steps = cleaned_args.get("value")
             day = cleaned_args.get("date")
 
+            today = datetime.now(tz=self.settings.BOT_TZ).date()
+
             current_chat = db_session.query(Chat).outerjoin(Chat.current_target) \
                 .filter(Chat.chat_id == str(chat_id)) \
                 .one()
 
             if not self.have_target(bot, current_chat):
+                return
+
+            if day < current_chat.current_target.date_creation:
+                bot.send_message(
+                    chat_id=update.message.chat_id, text=textwrap.dedent("""\
+                    {0}, дата для шагов не может быть раньше чем дата начала (*{1}*) у цели.
+                    """.format(
+                        update.message.from_user.first_name,
+                        current_chat.current_target.date_creation.strftime("%d.%m.%Y"))
+                    ), parse_mode=telegram.ParseMode.MARKDOWN
+                )
+                return
+            if day > today:
+                bot.send_message(
+                    chat_id=update.message.chat_id, text=textwrap.dedent("""\
+                    {0}, дата для шагов не может быть больше чем сегодня! Читер!
+                    """.format(update.message.from_user.first_name)
+                    ), parse_mode=telegram.ParseMode.MARKDOWN
+                )
                 return
 
             try:
@@ -132,8 +153,10 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                            %s, твои шаги обновлены! %s ты прошел(а) *%s* шагов, вместо _%s_ шагов!
-                            """ % (update.message.from_user.first_name, day.strftime("%d.%m.%Y"), steps, prev_value)),
+                    {0}, твои шаги обновлены! {1} ты прошел(а) *{2}* шагов, вместо _{3}_ шагов!
+                    """.format(
+                        update.message.from_user.first_name, day.strftime("%d.%m.%Y"), steps, prev_value
+                    )),
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
             except NoResultFound:
@@ -147,8 +170,8 @@ class DayHandler(CommandBaseHandler, CheckTargetMixin, StepCalculateMixin):
 
                 bot.send_message(
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
-                            %s! %s ты прошел(а) *%s* шагов! Молодец!
-                            """ % (update.message.from_user.first_name, day.strftime("%d.%m.%Y"), steps)),
+                    {0}! {1} ты прошел(а) *{2}* шагов! Молодец!
+                    """.format(update.message.from_user.first_name, day.strftime("%d.%m.%Y"), steps)),
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
 

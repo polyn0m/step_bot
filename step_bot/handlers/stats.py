@@ -32,7 +32,7 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
             try:
                 aggregate = db_session.query(func.sum(Step.steps).label('user_steps')) \
                     .filter(
-                        Step.target == current_chat.current_target
+                        Step.user_id == str(update.message.from_user.id)
                     ) \
                     .group_by(Step.target_id) \
                     .one()

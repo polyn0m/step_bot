@@ -27,7 +27,8 @@ def init_scheduler(settings, bot, db):
 
 
 def init_jobs(scheduler, bot, db, settings):
-    from step_bot.jobs.notify import EveningReminder, EveningStat
+    from step_bot.jobs.notify import EveningReminder
+    from step_bot.jobs.stats import EveningStat
 
     options = dict(scheduler=scheduler, bot=bot, db=db, settings=settings)
 

@@ -2,10 +2,11 @@ import logging
 import textwrap
 
 import telegram
+from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
 
 from step_bot.handlers import CommandBaseHandler, CheckTargetMixin
-from step_bot.models import Chat
+from step_bot.models import Chat, Step
 
 
 class StatHandler(CommandBaseHandler, CheckTargetMixin):
@@ -27,6 +28,18 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
             if not self.have_target(bot, current_chat):
                 return
 
+            user_steps = 0
+            try:
+                aggregate = db_session.query(func.sum(Step.steps).label('user_steps')) \
+                    .filter(
+                        Step.target == current_chat.current_target
+                    ) \
+                    .group_by(Step.target_id) \
+                    .one()
+                user_steps = aggregate.user_steps
+            except NoResultFound:
+                pass
+
             name = current_chat.current_target.name
             target = current_chat.current_target.target_value / 1000
             now = current_chat.current_target.current_value / 1000
@@ -37,7 +50,10 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
                 chat_id=update.message.chat_id, text=textwrap.dedent("""\
                 Наша цель *{0}* в *{1} км* к *{2}*
                 На данный момент мы прошли: *{3} км* (*{4:.2f}%* от цели)
-                """.format(name, target, end_date, now, percent)), parse_mode=telegram.ParseMode.MARKDOWN)
+                
+                Твой вклад в эту цель составляет *{5} км*!
+                """.format(name, target, end_date, now, percent, user_steps / 1000)),
+                parse_mode=telegram.ParseMode.MARKDOWN)
         except NoResultFound as e:
             self.send_error(bot, update.message.chat_id)
             logging.exception(e)

@@ -15,7 +15,7 @@ from step_bot.models import Chat, Step
 class StepCalculateMixin:
     def recalculate_steps(self, db_session, chat):
         sum = db_session.query(func.sum(Step.steps).label('total_steps')) \
-            .filter(Step.target_id == chat.current_target_id) \
+            .filter(Step.target == chat.current_target) \
             .group_by(Step.target_id) \
             .one()
 
@@ -73,7 +73,7 @@ class TodayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin
 
             try:
                 step_info = db_session.query(Step) \
-                    .filter(Step.user_id == str(user_id), Step.date == today) \
+                    .filter(Step.target == current_chat.current_target, Step.date == today) \
                     .one()
 
                 prev_value = step_info.steps
@@ -233,7 +233,7 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
 
             try:
                 step_info = db_session.query(Step) \
-                    .filter(Step.user_id == str(user_id), Step.date == day) \
+                    .filter(Step.target == current_chat.current_target, Step.date == day) \
                     .one()
 
                 prev_value = step_info.steps

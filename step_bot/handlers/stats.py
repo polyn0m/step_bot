@@ -12,15 +12,15 @@ from step_bot.models import Chat, Step
 class StatHandler(CommandBaseHandler, CheckTargetMixin):
     command = "stat"
 
-    def clean(self, args):
+    def clean_args(self, args):
         return dict()
 
     def execute(self, bot, update, cleaned_args):
+        chat_id = update.effective_chat.id
+
         db_session = self.get_db()
 
         try:
-            chat_id = update.message.chat_id
-
             current_chat = db_session.query(Chat).outerjoin(Chat.current_target) \
                 .filter(Chat.chat_id == str(chat_id)) \
                 .one()
@@ -32,7 +32,8 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
             try:
                 aggregate = db_session.query(func.sum(Step.steps).label('user_steps')) \
                     .filter(
-                        Step.user_id == str(update.message.from_user.id)
+                        Step.user_id == str(update.message.from_user.id),
+                        Step.target_id == current_chat.current_target_id
                     ) \
                     .group_by(Step.target_id) \
                     .one()
@@ -47,7 +48,7 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
             percent = now / target * 100
 
             bot.send_message(
-                chat_id=update.message.chat_id, text=textwrap.dedent("""\
+                chat_id=chat_id, text=textwrap.dedent("""\
                 Наша цель *{0}* в *{1} км* к *{2}*
                 На данный момент мы прошли: *{3} км* (*{4:.2f}%* от цели)
                 
@@ -55,7 +56,8 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
                 """.format(name, target, end_date, now, percent, user_steps / 1000)),
                 parse_mode=telegram.ParseMode.MARKDOWN)
         except NoResultFound as e:
-            self.send_error(bot, update.message.chat_id)
+            self.send_error(bot, chat_id, reply_to_message_id=update.effective_message.message_id)
+
             logging.exception(e)
         finally:
             db_session.commit()

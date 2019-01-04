@@ -71,31 +71,35 @@ class GroupHandler(BaseHandler):
             db_session.commit()
 
     def chat_created(self, bot, update):
-        logging.debug('New chat created %s' % update.message.chat_id)
+        logging.debug('New chat created %s' % update.effective_chat.id)
 
-        self.__create_chat(bot, update.message.chat_id)
+        self.__create_chat(bot, update.effective_chat.id)
 
     def chat_migrate(self, bot, update):
-        self.__migrate_chat(update.message.chat_id, update.message.migrate_to_chat_id)
+        self.__migrate_chat(update.effective_message.migrate_from_chat_id, update.effective_chat.id)
 
     def new_member(self, bot, update):
-        logging.debug('New members in chat %s' % update.message.chat_id)
+        chat_id = update.effective_chat.id
 
-        members = list(filter(lambda m: not m.is_bot, update.message.new_chat_members))
-        i_am = list(filter(lambda m: m.is_bot and m.username == bot.username, update.message.new_chat_members))
+        logging.debug('New members in chat %s' % chat_id)
+
+        members = list(filter(
+            lambda m: not m.is_bot, update.effective_message.new_chat_members))
+        i_am = list(filter(
+            lambda m: m.is_bot and m.username == bot.username, update.effective_message.new_chat_members))
 
         if len(i_am):
-            self.__create_chat(bot, update.message.chat_id)
+            self.__create_chat(bot, chat_id)
 
         if len(members) > 1:
             bot.send_message(
-                chat_id=update.message.chat_id, text=textwrap.dedent("""\
+                chat_id=chat_id, text=textwrap.dedent("""\
                 *Приветствую всех в челендж-проекте "Шаг к Мечте"!* ✋ {0}
                 """.format(self.greetings_text)), parse_mode=telegram.ParseMode.MARKDOWN
             )
         elif len(members) > 0:
             bot.send_message(
-                chat_id=update.message.chat_id, text=textwrap.dedent("""\
+                chat_id=chat_id, text=textwrap.dedent("""\
                 *Приветствую тебя в челендж-проекте "Шаг к Мечте"!* ✋ {0}
                 """.format(self.greetings_text)), parse_mode=telegram.ParseMode.MARKDOWN
             )
@@ -111,7 +115,7 @@ class P2PEchoHandler(BaseHandler):
         logging.debug('Someone write me in p2p chat, suck it!')
 
         bot.send_message(
-            chat_id=update.message.chat_id, text="""
+            chat_id=update.effective_chat.id, text="""
             Я предназначен только для групповых чатов! Так что вначале добавь меня в группу!
             """
         )

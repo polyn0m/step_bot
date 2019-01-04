@@ -1,7 +1,7 @@
 import logging
 import textwrap
 
-from telegram.ext import CommandHandler
+from telegram.ext import CommandHandler, ConversationHandler
 
 
 def init_handlers(dispatcher, db, settings):
@@ -9,6 +9,8 @@ def init_handlers(dispatcher, db, settings):
     from step_bot.handlers.targets import NewTargetHandler, UpdateTargetHandler
     from step_bot.handlers.greetings import GroupHandler, P2PEchoHandler
     from step_bot.handlers.stats import StatHandler
+
+    dispatcher.add_error_handler(log_error)
 
     handlers = set()
 
@@ -27,6 +29,10 @@ def init_handlers(dispatcher, db, settings):
     handlers.add(StatHandler(**options))
 
     return handlers
+
+
+def log_error(bot, update, error):
+    logging.warning('Update "%s" caused error "%s"', update, error)
 
 
 def restricted(handler):
@@ -63,8 +69,32 @@ class BaseHandler:
 
         self.settings = settings
 
-    def send_error(self, bot, chat_id):
-        bot.send_message(chat_id=chat_id, text="Ой! Что-то пошло не так, соощите разработчикам!")
+    def send_error(self, bot, chat_id, **kwargs):
+        bot.send_message(chat_id=chat_id, text="Ой! Что-то пошло не так, соощите разработчикам!", **kwargs)
+
+    def send_clean_error(self, bot, chat_id, msg, **kwargs):
+        bot.send_message(chat_id=chat_id, text=msg, **kwargs)
+
+
+class ConversationBaseHandler(BaseHandler):
+    handler = None
+
+    entry_points = []
+    states = {}
+    fallbacks = []
+
+    per_user = True
+    per_chat = True
+    conversation_timeout = 600
+
+    def __init__(self, *args, **kwargs):
+        super(ConversationBaseHandler, self).__init__(*args, **kwargs)
+
+        self.handler = ConversationHandler(
+            entry_points=self.entry_points, states=self.states, fallbacks=self.fallbacks,
+            per_user=self.per_user, per_chat=self.per_chat, conversation_timeout=self.conversation_timeout)
+
+        self.dispatcher.add_handler(self.handler)
 
 
 class CommandBaseHandler(BaseHandler):
@@ -78,24 +108,27 @@ class CommandBaseHandler(BaseHandler):
 
         self.dispatcher.add_handler(CommandHandler(self.command, self.handle, pass_args=True))
 
-    def clean(self, args):
+    def clean_args(self, args):
         raise NotImplemented
 
-    def send_clean_error(self, bot, chat_id, e):
+    def send_clean_error(self, bot, chat_id, msg="", **kwargs):
         bot.send_message(
             chat_id=chat_id, text=textwrap.dedent("""\
             {0}
 
             Использование: /{1} {2}
-            """.format(self.clean_error_message, self.command, self.usage_params)))
+            """.format(self.clean_error_message, self.command, self.usage_params)), **kwargs)
 
     def handle(self, bot, update, args):
         try:
-            cleaned_args = self.clean(args)
+            cleaned_args = self.clean_args(args)
 
             self.execute(bot, update, cleaned_args)
         except ValueError as e:
-            self.send_clean_error(bot, update.message.chat_id, e)
+            self.send_clean_error(
+                bot, update.effective_chat.id, reply_to_message_id=update.effective_message.message_id
+            )
+
             logging.exception(e)
 
     def execute(self, bot, update, cleaned_args):

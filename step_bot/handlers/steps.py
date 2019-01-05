@@ -215,7 +215,7 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
         except ValueError as e:
             self.send_clean_error(
                 bot, chat_id, "Я не понимаю что ты указал(а), мне понятны даты в виде ДД.ММ.ГГГГ!",
-                reply_to_message_id=update.effective_message.message_id
+                reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True)
             )
 
             logging.exception(e)
@@ -283,6 +283,13 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
             return ConversationHandler.END
         except NoResultFound as e:
             self.send_error(bot, update.message.chat_id)
+            logging.exception(e)
+        except ValueError as e:
+            self.send_clean_error(
+                bot, chat_id, "Указано не верное количество шагов, напиши количество шагов в виде числа!",
+                reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True)
+            )
+
             logging.exception(e)
         finally:
             db_session.commit()

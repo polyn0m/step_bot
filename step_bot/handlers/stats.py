@@ -54,7 +54,7 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
                 
                 Твой вклад в эту цель составляет *{5} км*!
                 """.format(name, target, end_date, now, percent, user_steps / 1000)),
-                parse_mode=telegram.ParseMode.MARKDOWN)
+                reply_to_message_id=update.effective_message.message_id, parse_mode=telegram.ParseMode.MARKDOWN)
         except NoResultFound as e:
             self.send_error(bot, chat_id, reply_to_message_id=update.effective_message.message_id)
 

@@ -6,6 +6,7 @@ from datetime import datetime
 import telegram
 from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
+from telegram import ForceReply
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, Filters
 
 from step_bot.handlers import CheckTargetMixin, ConversationBaseHandler
@@ -49,7 +50,8 @@ class TodayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin
             chat_id=update.effective_chat.id, text=textwrap.dedent("""\
             *{0}*, привет! Сколько шагов ты прошел за *{1}*?
             """.format(update.message.from_user.first_name, today.strftime("%d.%m.%Y"))),
-            reply_to_message_id=update.effective_message.message_id, parse_mode=telegram.ParseMode.MARKDOWN
+            reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True),
+            parse_mode=telegram.ParseMode.MARKDOWN
         )
 
         return TodayHandler.INPUT_STEPS
@@ -114,7 +116,7 @@ class TodayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin
         except ValueError as e:
             self.send_clean_error(
                 bot, chat_id, "Указано не верное количество шагов, напиши количество шагов в виде числа!",
-                reply_to_message_id=update.effective_message.message_id
+                reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True)
             )
 
             logging.exception(e)
@@ -156,7 +158,8 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
             chat_id=update.effective_chat.id, text=textwrap.dedent("""\
             *{0}*, привет! За какой день ты хочешь указать шаги?
             """.format(update.effective_user.first_name)),
-            reply_to_message_id=update.effective_message.message_id, parse_mode=telegram.ParseMode.MARKDOWN
+            reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True),
+            parse_mode=telegram.ParseMode.MARKDOWN
         )
 
         return DayHandler.INPUT_DATE
@@ -184,7 +187,8 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
                     """.format(
                         update.message.from_user.first_name,
                         current_chat.current_target.date_creation.strftime("%d.%m.%Y"))
-                    ), reply_to_message_id=update.effective_message.message_id, parse_mode=telegram.ParseMode.MARKDOWN
+                    ), reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True),
+                    parse_mode=telegram.ParseMode.MARKDOWN
                 )
                 return
             if day > today:
@@ -192,7 +196,8 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
                     chat_id=update.message.chat_id, text=textwrap.dedent("""\
                     *{0}*, дата для шагов не может быть больше чем сегодня! Читер!
                     """.format(update.message.from_user.first_name)
-                    ), reply_to_message_id=update.effective_message.message_id, parse_mode=telegram.ParseMode.MARKDOWN
+                    ), reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True),
+                    parse_mode=telegram.ParseMode.MARKDOWN
                 )
                 return
 
@@ -202,7 +207,8 @@ class DayHandler(ConversationBaseHandler, CheckTargetMixin, StepCalculateMixin):
                 chat_id=update.effective_chat.id, text=textwrap.dedent("""\
                 *{0}*, понял! А сколько шагов пройдено за *{1}*?
                 """.format(update.effective_user.first_name, day.strftime("%d.%m.%Y"))),
-                reply_to_message_id=update.effective_message.message_id, parse_mode=telegram.ParseMode.MARKDOWN
+                reply_to_message_id=update.effective_message.message_id, reply_markup=ForceReply(selective=True),
+                parse_mode=telegram.ParseMode.MARKDOWN
             )
 
             return DayHandler.INPUT_STEPS

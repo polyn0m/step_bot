@@ -43,7 +43,7 @@ class StatHandler(CommandBaseHandler, CheckTargetMixin):
 
             name = current_chat.current_target.name
             target = current_chat.current_target.target_value / 1000
-            now = current_chat.current_target.current_value / 1000
+            now = (current_chat.current_target.initial_value + current_chat.current_target.current_value) / 1000
             end_date = current_chat.current_target.target_date.strftime("%d.%m.%Y")
             percent = now / target * 100
 
